@@ -17,14 +17,14 @@ local PARENT = LQT.PARENT
 local ApplyFrameProxy = LQT.ApplyFrameProxy
 local FrameProxyMt = LQT.FrameProxyMt
 
+local Scripts = Addon.Scripts
+
 local TypeInfo = Addon.TypeInfo
 local FillTypeInfo = Addon.FillTypeInfo
 
 local FrameSmoothScroll = Addon.FrameSmoothScroll
 local CodeEditor = Addon.CodeEditor
 local BoxShadow = Addon.BoxShadow
-local ContextMenu = Addon.ContextMenu
-local ContextMenuButton = Addon.ContextMenuButton
 local FrameTraceWindow = Addon.FrameTraceWindow
 local RenameBox = Addon.RenameBox
 local FrameInspector = Addon.FrameInspector
@@ -117,7 +117,7 @@ local ExpandDownButton = Button { BubbleHover }
     function(self, parent)
         -- table.insert(parent.buttons, self)
         self.menu = parent
-        self.menu:AddButton(self)
+        self.menu:MenuAddButton(self)
     end,
     SetText = function(self, ...)
         self.Text:SetText(...)
@@ -169,7 +169,7 @@ local ExpandDownMenu = ScrollFrame { BubbleHover }
         self:SetScrollChild(self.Container)
     end,
 
-    AddButton = function(self, button)
+    MenuAddButton = function(self, button)
         button:SetParent(self.Container)
         table.insert(self.buttons, button)
     end,
@@ -308,13 +308,6 @@ local ScriptEntry = Frame { SidebarMouseHooks } {
             self.Disabled:Show()
             self.Enabled:Hide()
         end
-        if self.script.code == self.script.code_original or not self.script.code_original or not self.script.imported then
-            self.ContextMenu.ResetScript:Disable()
-            self.ContextMenu.ResetScript.Text:SetTextColor(0.5, 0.5, 0.5)
-        else
-            self.ContextMenu.ResetScript:Enable()
-            self.ContextMenu.ResetScript.Text:SetTextColor(1, 1, 1)
-        end
     end,
     SetData = function(self, name, script, settings)
         self.Button:SetText(script.name)
@@ -330,11 +323,7 @@ local ScriptEntry = Frame { SidebarMouseHooks } {
         self:Update()
     end,
     Edit = function(self)
-        editorWindow:EditScript(self.name, self.script)
-    end,
-    ResetScript = function(self)
-        SilverUI.ResetScript(self.name, self.script)
-        self:Update()
+        DTT:EditScript(self.name, self.script)
     end,
     SetName = function(self, name)
         self.script.name = name
@@ -422,7 +411,7 @@ local ScriptEntry = Frame { SidebarMouseHooks } {
         Run = ExpandDownButton
             :Text 'Run'
             :Click(function(parent)
-                SilverUI.ExecuteScript(parent.name, parent.script.name, parent.script.code)
+                Scripts.ExecuteScript(parent.script)
             end),
         Rename = ExpandDownButton
             :Text 'Rename'
@@ -432,9 +421,9 @@ local ScriptEntry = Frame { SidebarMouseHooks } {
         Copy = ExpandDownButton
             :Text 'Copy'
             :Click(function(parent)
-                local name, script = SilverUI.CopyScript(parent.name, parent.script, parent.settings)
+                local name, script = Scripts.CopyScript(parent.script)
                 parent:GetParent():Update()
-                editorWindow:EditScript(name, script)
+                DTT:EditScript(name, script)
             end),
         Toggle = ExpandDownButton
             :Text 'Disable'
@@ -442,11 +431,10 @@ local ScriptEntry = Frame { SidebarMouseHooks } {
                 parent.settings.enabled = not parent.settings.enabled
                 parent:Update()
             end),
-        ResetScript = ExpandDownButton:Text 'Reset script':Click(function(script) script:ResetScript() end),
         Delete = ExpandDownButton
             :Text 'Delete'
             :Click(function(parent)
-                SilverUI.DeleteScript(parent.name, parent.script)
+                Scripts.DeleteScript(parent.script)
                 parent:GetParent():Update()
             end),
     }
@@ -457,17 +445,14 @@ local FrameAddonSection = Frame
     :Height(28)
 {
     scriptButtons = {},
-    SetData = function(self, name, account, character)
-        self.name = name
-        self.account = account
-        self.settings = character
+    Update = function(self)
         for _, button in pairs(self.scriptButtons) do
             button:Hide()
             button:SetPoint('TOP', self, 'TOP')
         end
         local height = 28
         local previous
-        for i, script in pairs(account.scripts) do
+        for i, script in pairs(DTTSavedVariablesAccount.scripts) do
             if not self.scriptButtons[i] then
                 self.scriptButtons[i] = ScriptEntry
                     :Height(18)
@@ -480,18 +465,15 @@ local FrameAddonSection = Frame
             else
                 button:SetPoint('TOPLEFT', self, 'TOPLEFT')
             end
-            button:SetData(name, script, character.scripts[script.name])
+            button:SetData(script.name, script, DTTSavedVariablesCharacter.scripts[script.name])
             button:Show()
             height = height + button:GetHeight()
             previous = button
         end
         self:SetHeight(height)
     end,
-    Update = function(self)
-        self:SetData(self.name, self.account, self.settings)
-    end,
     NewScript = function(self)
-        local script = SilverUI.NewScript(self.name)
+        local script = Scripts.NewScript()
         self:Update()
         for _, button in pairs(self.scriptButtons) do
             if button.script.name == script then
@@ -580,7 +562,7 @@ local Sidebar = FrameSmoothScroll
             :Text 'Tracers'
         {
             [Script.OnClick] = function(self)
-                editorWindow:EnterTrace()
+                DTT:EnterTrace()
             end,
 
             [SidebarAnim] = function(self, state)
@@ -652,7 +634,7 @@ local Sidebar = FrameSmoothScroll
             :NormalTexture 'Interface/AddOns/silver-ui/art/icons/plus'
         {
             [Script.OnClick] = function(self)
-                editorWindow:NewScript()
+                DTT:NewScript()
             end,
         },
         [SidebarAnim] = function(self, state)
@@ -677,7 +659,7 @@ local Sidebar = FrameSmoothScroll
                 :Hide()
                 :AllPoints(PARENT),
             [Script.OnClick] = function(self)
-                editorWindow:EditScratchpad()
+                DTT:EditScratchpad()
             end,
             [OnPage] = function(self, page)
                 self.Selected:SetShown(page == 'scratchpad')
@@ -693,24 +675,13 @@ local Sidebar = FrameSmoothScroll
             .RIGHT:RIGHT()
         {
             function(self, parent)
-                local previous = nil
-                local height = 0
-                for name, account, character in SilverUI.Addons() do
-                    Style(self){
-                        [name] = FrameAddonSection
-                            :Data(name, account, character)
-                    }
-                    local content = self[name]
-                    if previous then
-                        content:SetPoint('TOPLEFT', previous, 'BOTTOMLEFT')
-                    else
-                        content:SetPoint('TOPLEFT', self, 'TOPLEFT')
-                    end
-                    content:SetPoint('RIGHT', self, 'RIGHT')
-                    height = height + content:GetHeight()
-                    previous = content
-                end
-                self:SetHeight(height)
+                Style(self){
+                    DTT = FrameAddonSection
+                        .TOPLEFT:TOPLEFT()
+                        .RIGHT:RIGHT()
+                        :Update()
+                }
+                self:SetHeight(self.DTT:GetHeight())
             end,
 
             Update = function(self)
@@ -778,9 +749,9 @@ local PageMain = FrameSmoothScroll {
                 local func = assert(loadstring('return function(inspect, trace, this, Addon) ' .. code .. '\n end', "silver editor"))
                 local ok, error = pcall(
                     func(),
-                    function(frame) editorWindow.FrameInspector:SetFrameStack(frame) end,
-                    function(...) editorWindow.Tracer:StartTrace(...) end,
-                    editorWindow.FrameInspector.selected,
+                    function(frame) DTT.FrameInspector:SetFrameStack(frame) end,
+                    function(...) DTT.Tracer:StartTrace(...) end,
+                    DTT.FrameInspector.selected,
                     Addon
                 )
                 if not ok then
@@ -897,16 +868,16 @@ local FrameDTT = Frame { PixelAnchor, PixelSizex2 }
     RenameScript = function(self, name)
     end,
     NewScript = function(self)
-        self.scripts['Silver UI']:NewScript()
+        self.scripts['DTT']:NewScript()
     end,
     EditScratchpad = function(self)
         self:ShowMain()
         self.scriptEditing = 'scratchpad'
         self.editor.Save = function(code)
-            SilverUISavedVariablesCharacter.playground = code
+            DTTSavedVariablesAccount.playground = code
         end
         self.editor:ClearHistory()
-        self.editor:SetText(SilverUISavedVariablesCharacter.playground or '\n\n')
+        self.editor:SetText(DTTSavedVariablesAccount.playground or '\n\n')
         self.editor:SetCursorPosition(0)
         self.editor:SetFocus()
         self.PageMain:SetVerticalScroll(0)
@@ -941,7 +912,7 @@ local FrameDTT = Frame { PixelAnchor, PixelSizex2 }
         self.PageSettings:Show()
     end,
     NextPage = function(self)
-        local scriptButtons = self.scripts['Silver UI'].scriptButtons
+        local scriptButtons = self.scripts['DTT'].scriptButtons
         if self.Tracer:IsShown() then
             self:EditScratchpad()
         elseif self.scriptEditing == 'scratchpad' then
@@ -967,8 +938,8 @@ local FrameDTT = Frame { PixelAnchor, PixelSizex2 }
             self:EnterTrace()
         elseif not self.Tracer:IsShown() then
             local previousScript
-            for i=1, #self.scripts['Silver UI'].scriptButtons do
-                local b = self.scripts['Silver UI'].scriptButtons[i]
+            for i=1, #self.scripts['DTT'].scriptButtons do
+                local b = self.scripts['DTT'].scriptButtons[i]
                 if b.script == self.scriptEditing then
                     previousScript = i-1
                     break
@@ -978,7 +949,7 @@ local FrameDTT = Frame { PixelAnchor, PixelSizex2 }
                 if previousScript == 0 then
                     self:EditScratchpad()
                 else
-                    self:EditScript('', self.scripts['Silver UI'].scriptButtons[previousScript].script)
+                    self:EditScript('', self.scripts['DTT'].scriptButtons[previousScript].script)
                 end
             end
         end
@@ -1160,8 +1131,6 @@ local function spawn()
 
     editorWindow = FrameDTT.new(nil, 'DTT')
     editorWindow:EditScratchpad()
-    SilverUI.Editor = editorWindow
-
     editorWindow:Show()
 
 end

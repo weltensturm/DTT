@@ -1,0 +1,30 @@
+## Interface: 100002
+## Title: DTT
+## Author: weltensturm
+## RequiredDeps: LQT-1.0
+## SavedVariables: DTTSavedVariablesAccount
+## SavedVariablesPerCharacter: DTTSavedVariablesCharacter
+
+libs/LQT.lua
+libs/indent.lua
+
+util.lua
+
+templates/Animation.lua
+templates/BoxShadow.lua
+templates/CheckBox.lua
+templates/ContextMenu.lua
+templates/SmoothScroll.lua
+templates/SmoothScrollSparse.lua
+templates/CodeEditor.lua
+templates/PixelSize.lua
+templates/PixelAnchor.lua
+
+settings.lua
+
+editor/RenameBox.lua
+editor/Event.lua
+editor/Trace.lua
+editor/TypeInfo.lua
+editor/FrameInspector.lua
+editor/Editor.lua
