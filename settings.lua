@@ -74,7 +74,7 @@ end
 
 
 Module:HookScript('OnEvent', function(self, event, addon)
-    if event == "ADDON_LOADED" and addon == "Scripts" then
+    if event == "ADDON_LOADED" and addon == "DTT" then
 
         if not DTTSavedVariablesAccount then
             DTTSavedVariablesAccount = {}
