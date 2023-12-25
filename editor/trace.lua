@@ -41,13 +41,13 @@ local FrameTracer = Frame {
         self:SetHeight(self.Traces:GetHeight() + self.Name:GetHeight())
     end,
     Name = FontString
-        :Font('Interface/AddOns/silver-ui/Fonts/iosevka-regular.ttf', 12, '')
+        :Font('Interface/AddOns/DTT/Fonts/iosevka-regular.ttf', 12, '')
         .TOPLEFT:TOPLEFT(10, 0)
         .TOPRIGHT:TOPRIGHT(-10, 0)
         :JustifyH 'LEFT'
         :Height(16),
     Traces = EditBox
-        :Font('Interface/AddOns/silver-ui/Fonts/iosevka-regular.ttf', 11, '')
+        :Font('Interface/AddOns/DTT/Fonts/iosevka-regular.ttf', 11, '')
         -- :Size(400, 400)
         .TOPLEFT:BOTTOMLEFT(PARENT.Name)
         .RIGHT:RIGHT(-5, 0)

@@ -7,7 +7,7 @@ local PARENT, Frame, Texture, MaskTexture = LQT.PARENT, LQT.Frame, LQT.Texture, 
 
 
 local ShadowTexture = Texture
-    :Texture 'Interface/AddOns/silver-ui/art/shadow'
+    :Texture 'Interface/AddOns/DTT/art/shadow'
     -- :SnapToPixelGrid(false)
     :TexelSnappingBias(0)
 
@@ -53,6 +53,6 @@ Addon.BoxShadow = Frame {
     Texture = Texture
         :AllPoints()
         :SetTextureSliceMode(Enum.UITextureSliceMode.Tiled)
-        :Texture 'Interface/AddOns/silver-ui/art/shadow',
+        :Texture 'Interface/AddOns/DTT/art/shadow',
 
 }

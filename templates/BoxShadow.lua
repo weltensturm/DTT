@@ -9,7 +9,7 @@ local Texture = LQT.Texture
 
 
 local ShadowTexture = Texture
-    :Texture 'Interface/AddOns/silver-ui/art/shadow'
+    :Texture 'Interface/AddOns/DTT/art/shadow'
     -- :SnapToPixelGrid(false)
     :TexelSnappingBias(0)
 

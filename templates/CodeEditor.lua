@@ -43,7 +43,7 @@ Addon.CodeEditor = Frame {
 
     Shadow = FontString
         .TOPLEFT:TOPLEFT(40,-3)
-        :Font('Interface/AddOns/silver-ui/Fonts/iosevka-regular.ttf', 11, '')
+        :Font('Interface/AddOns/DTT/Fonts/iosevka-regular.ttf', 11, '')
         :JustifyH("LEFT")
         :JustifyV("TOP")
         :TextColor(0.7, 0.7, 0.7),
@@ -51,7 +51,7 @@ Addon.CodeEditor = Frame {
     Editor = EditBox
         .TOPLEFT:TOPLEFT(40,-3)
         :Width(9999)
-        :Font('Interface/AddOns/silver-ui/Fonts/iosevka-regular.ttf', 11, '')
+        :Font('Interface/AddOns/DTT/Fonts/iosevka-regular.ttf', 11, '')
         :FrameLevel(5)
         :JustifyH("LEFT")
         :JustifyV("TOP")
@@ -222,6 +222,6 @@ Addon.CodeEditor = Frame {
         .TOPRIGHT:TOPLEFT(PARENT.Editor, -4, 0)
         :JustifyH('LEFT')
         :TextColor(0.7, 0.7, 0.7)
-        :Font('Interface/AddOns/silver-ui/Fonts/iosevka-regular.ttf', 11, ''),
+        :Font('Interface/AddOns/DTT/Fonts/iosevka-regular.ttf', 11, ''),
 
 }

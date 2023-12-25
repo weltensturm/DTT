@@ -261,7 +261,7 @@ local FrameInspectorButton = Btn
     ['.Text'] = Style
         :Alpha(1)
         :Font('Fonts/ARIALN.TTF', 12, '')
-        -- :Font('Interface/AddOns/silver-ui/Fonts/iosevka-regular.ttf', 11)
+        -- :Font('Interface/AddOns/DTT/Fonts/iosevka-regular.ttf', 11)
 }
 
 
@@ -275,7 +275,7 @@ Addon.FrameInspector = Addon.Templates.SmoothScrollSparse --FrameSmoothScroll
     FramePicker = FramePicker,
 
     Search = Button
-        :NormalTexture 'Interface/AddOns/silver-ui/art/icons/search'
+        :NormalTexture 'Interface/AddOns/DTT/art/icons/search'
         :Size(16, 16)
         :Alpha(0.5)
     {

@@ -390,21 +390,21 @@ local ScriptEntry = Frame { SidebarMouseHooks } {
     Enabled = Texture
         .LEFT:LEFT(3.5, 0)
         :Size(14, 14)
-        :Texture 'Interface/AddOns/silver-ui/art/icons/dot'
+        :Texture 'Interface/AddOns/DTT/art/icons/dot'
         :VertexColor(1, 1, 1, 0.5)
         :Hide(),
 
     Disabled = Texture
         .LEFT:LEFT(3.5, 0)
         :Size(14, 14)
-        :Texture 'Interface/AddOns/silver-ui/art/icons/dot-split'
+        :Texture 'Interface/AddOns/DTT/art/icons/dot-split'
         :VertexColor(1, 1, 1, 0.5)
         :Hide(),
 
     Selected = Texture
         .LEFT:LEFT(3.5, 0)
         :Size(14, 14)
-        :Texture 'Interface/AddOns/silver-ui/art/icons/circle'
+        :Texture 'Interface/AddOns/DTT/art/icons/circle'
         :Hide(),
 
     ContextMenu = ExpandDownMenu {
@@ -498,7 +498,7 @@ local SidebarButton = StyledButton { SidebarMouseHooks } {
     Selected = Texture
         .LEFT:LEFT(3.5, 0)
         :Size(14, 14)
-        :Texture 'Interface/AddOns/silver-ui/art/icons/circle'
+        :Texture 'Interface/AddOns/DTT/art/icons/circle'
         :Hide(),
 
     [SidebarAnim] = function(self, state)
@@ -585,13 +585,13 @@ local Sidebar = FrameSmoothScroll
             Crosshair = Texture
                 .LEFT:LEFT(3.5, 0)
                 :Size(14, 14)
-                :Texture 'Interface/AddOns/silver-ui/art/icons/crosshair'
+                :Texture 'Interface/AddOns/DTT/art/icons/crosshair'
                 :Alpha(0.5),
 
             HitMarker = Texture
                 .LEFT:LEFT(3.5, 0)
                 :Size(14, 14)
-                :Texture 'Interface/AddOns/silver-ui/art/icons/hitmarker'
+                :Texture 'Interface/AddOns/DTT/art/icons/hitmarker'
                 :VertexColor(1, 1, 0)
                 :Alpha(0)
             {
@@ -609,7 +609,7 @@ local Sidebar = FrameSmoothScroll
             Selected = Texture
                 .LEFT:LEFT(3.5, 0)
                 :Size(14, 14)
-                :Texture 'Interface/AddOns/silver-ui/art/icons/circle'
+                :Texture 'Interface/AddOns/DTT/art/icons/circle'
                 :Hide(),
 
             ['.Text'] = Style
@@ -631,7 +631,7 @@ local Sidebar = FrameSmoothScroll
         ScriptAdd = Button { SidebarMouseHooks }
             .LEFT:RIGHT(PARENT.ScriptLabel, 2, 0)
             :Size(14, 14)
-            :NormalTexture 'Interface/AddOns/silver-ui/art/icons/plus'
+            :NormalTexture 'Interface/AddOns/DTT/art/icons/plus'
         {
             [Script.OnClick] = function(self)
                 DTT:NewScript()
@@ -650,7 +650,7 @@ local Sidebar = FrameSmoothScroll
             Smile = Texture
                 .LEFT:LEFT(3.5, 0)
                 :Size(14, 14)
-                :Texture 'Interface/AddOns/silver-ui/art/icons/smile'
+                :Texture 'Interface/AddOns/DTT/art/icons/smile'
                 :VertexColor(1, 1, 1, 0.5),
             ActiveBg = Texture
                 :Texture 'Interface/BUTTONS/UI-Listbox-Highlight2'
@@ -784,7 +784,7 @@ local PageMain = FrameSmoothScroll {
         :AllPoints()
     {
         Text = FontString
-            :Font('Interface/AddOns/silver-ui/Fonts/iosevka-regular.ttf', 11, '')
+            :Font('Interface/AddOns/DTT/Fonts/iosevka-regular.ttf', 11, '')
             :JustifyH 'LEFT'
             :Hide()
             .BOTTOMLEFT:BOTTOMLEFT(2, 2)
@@ -978,7 +978,7 @@ local FrameDTT = Frame { PixelAnchor, PixelSizex2 }
     Title = FontString
         .TOPLEFT:TOPLEFT(8, -4)
         :Height(19)
-        :Font('Interface/AddOns/silver-ui/Fonts/iosevka-regular.ttf', 14, '')
+        :Font('Interface/AddOns/DTT/Fonts/iosevka-regular.ttf', 14, '')
         :Text 'dtt',
 
     TitleMoveHandler = Frame
@@ -1049,7 +1049,7 @@ local FrameDTT = Frame { PixelAnchor, PixelSizex2 }
         end,
         Texture = Texture
             :AllPoints(PARENT)
-            :Texture 'Interface/AddOns/silver-ui/art/icons/resize'
+            :Texture 'Interface/AddOns/DTT/art/icons/resize'
     },
 
     Bg = Texture
@@ -1062,14 +1062,14 @@ local FrameDTT = Frame { PixelAnchor, PixelSizex2 }
         .TOPRIGHT:TOPRIGHT(-3, -5)
         :Size(20, 20)
         :Alpha(0.75)
-        :NormalTexture 'Interface/AddOns/silver-ui/art/icons/cross'
+        :NormalTexture 'Interface/AddOns/DTT/art/icons/cross'
     {
         [Script.OnClick] = PARENT.Hide
     },
 
     ButtonReload = StyledButton
         :Size(20, 20)
-        :NormalTexture 'Interface/AddOns/silver-ui/art/icons/reload'
+        :NormalTexture 'Interface/AddOns/DTT/art/icons/reload'
         :FrameLevel(10)
         -- .RIGHT:LEFT(PARENT.settingsBtn)
         .RIGHT:LEFT(PARENT.ButtonClose)
@@ -1078,7 +1078,7 @@ local FrameDTT = Frame { PixelAnchor, PixelSizex2 }
     },
 
     ButtonPickFrame = StyledButton
-        :NormalTexture 'Interface/AddOns/silver-ui/art/icons/framepicker'
+        :NormalTexture 'Interface/AddOns/DTT/art/icons/framepicker'
         :FrameLevel(10)
         :Size(20, 20)
         .RIGHT:LEFT(PARENT.ButtonReload)
