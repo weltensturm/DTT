@@ -144,11 +144,11 @@ local FrameTraceWindow = FrameSmoothScroll {
             query(self.Content, '.Tracer#'):Hide()
             local previous = nil
             for i, t in pairs(self.tracers) do
-                Style(self.Content) {
+                Style {
                     ['Tracer' .. i] = FrameTracer
                         :Data(t)
                         :Show()
-                }
+                }(self.Content)
                 local tracer = self.Content['Tracer' .. i]
                 if previous then
                     tracer:SetPoint('TOPLEFT', previous, 'BOTTOMLEFT')

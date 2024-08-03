@@ -25,7 +25,7 @@ local revision = 21
 -- luacheck: globals LqtIndentationLib
 
 
--- modified for SilverUI
+-- modified for DTT
 
 
 if not LqtIndentationLib then

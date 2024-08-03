@@ -86,7 +86,6 @@ local function attribute_str_values(obj, k)
 end
 
 
-
 local FramePicker = Frame
     :SetFrameStrata('TOOLTIP')
     :SetFrameLevel(9999)
@@ -407,7 +406,7 @@ Addon.FrameInspector = Addon.Templates.SmoothScrollSparse --FrameSmoothScroll
         local previous = nil
         for i = 1, #parents do
             local reference = parents[i][1]
-            Style(self) {
+            Style {
                 ['Parent' .. i] = FrameInspectorButton
                     :Reference(reference, slice(parents, i+1), parents[i][2])
                     :FrameLevel(10)
@@ -421,7 +420,7 @@ Addon.FrameInspector = Addon.Templates.SmoothScrollSparse --FrameSmoothScroll
                         :Text(parents[i][2]),
                     Style:Width(SELF.Text:GetStringWidth() + 20)
                 }
-            }
+            }(self)
 
             local content = self['Parent' .. i]
             if previous then

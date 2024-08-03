@@ -11,6 +11,7 @@ libs/indent.lua
 util.lua
 
 templates/Animation.lua
+templates/BubbleScript.lua
 templates/BoxShadow.lua
 templates/CheckBox.lua
 templates/ContextMenu.lua
@@ -19,6 +20,8 @@ templates/SmoothScrollSparse.lua
 templates/CodeEditor.lua
 templates/PixelSize.lua
 templates/PixelAnchor.lua
+templates/StyledButton.lua
+templates/ExpandMenu.lua
 
 settings.lua
 
@@ -27,4 +30,5 @@ editor/Event.lua
 editor/Trace.lua
 editor/TypeInfo.lua
 editor/FrameInspector.lua
+editor/DTTSidebar.lua
 editor/Editor.lua

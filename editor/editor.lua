@@ -26,28 +26,16 @@ local FrameSmoothScroll = Addon.FrameSmoothScroll
 local CodeEditor = Addon.CodeEditor
 local BoxShadow = Addon.BoxShadow
 local FrameTraceWindow = Addon.FrameTraceWindow
-local RenameBox = Addon.RenameBox
 local FrameInspector = Addon.FrameInspector
 local PixelAnchor = Addon.Templates.PixelAnchor
 local PixelSizex2 = Addon.Templates.PixelSizex2
-local Event = Addon.Event
+local BubbleScript = Addon.BubbleScript
+local StyledButton = Addon.StyledButton
+local OnPage = Addon.OnPage
 
-local TraceReceived = Addon.TraceReceived
-local SidebarEnter = Event()
-local SidebarLeave = Event()
-local SidebarAnim = Event()
-local OnPage = Event()
 
 
 local editorWindow = nil
-
-
-
-local CubicInOut = function(x)
-    return x < 0.5
-        and 4 * x^3
-         or 1 - (-2 * x + 2)^3 / 2;
-end
 
 
 local function GetUIParentChildren()
@@ -65,637 +53,14 @@ local function GetUIParentChildren()
 end
 
 
-local Bubble = setmetatable(
-    {},
-    {
-        __index = function(bubble, ev)
-            if not rawget(bubble, ev) then
-
-                bubble[ev] = Style {
-                    function(widget, parent)
-                        if widget:HasScript(ev) then
-                            widget:HookScript(ev, function(self, ...)
-                                parent:GetScript(ev)(parent, ...)
-                            end)
-                        elseif widget[ev] then
-                            hooksecurefunc(widget[ev], function(self, ...)
-                                parent[ev](parent, ...)
-                            end)
-                        else
-                            assert(false, 'Cannot bubble ' .. ev)
-                        end
-                    end
-                }
-
-            end
-            return rawget(bubble, ev)
-        end
-    }
-)
-
-
-local BubbleHover = Style { Bubble.OnEnter, Bubble.OnLeave }
+local BubbleHover = Style { BubbleScript.OnEnter, BubbleScript.OnLeave }
 
 
 local SortedChildren = nil
 
 
-local SidebarMouseHooks = Style {
-    [Script.OnEnter] = function(self)
-        SidebarEnter('mouse')
-    end,
-    [Script.OnLeave] = function(self)
-        SidebarLeave('mouse')
-    end,
-}
 
-
-local ExpandDownButton = Button { BubbleHover }
-    :RegisterForClicks('LeftButtonUp', 'LeftButtonDown')
-    :Height(16)
-{
-    function(self, parent)
-        -- table.insert(parent.buttons, self)
-        self.menu = parent
-        self.menu:MenuAddButton(self)
-    end,
-    SetText = function(self, ...)
-        self.Text:SetText(...)
-    end,
-    SetClick = function(self, fn)
-        self.Click = fn
-    end,
-
-    [Script.OnEnter] = function(self)
-        self.hoverBg:Show()
-    end,
-    [Script.OnLeave] = function(self)
-        self.hoverBg:Hide()
-    end,
-
-    [Script.OnClick] = function(self, button, down)
-        if down then
-            self.menu.ClickTracker:SetFocus()
-        else
-            self.menu:MenuClose()
-            if self.Click then
-                self.Click(self.menu:GetParent())
-            end
-        end
-    end,
-
-    Text = FontString
-        :SetFont('Fonts/ARIALN.ttf', 12)
-        .LEFT:LEFT(12, 0)
-        :JustifyH 'LEFT',
-    hoverBg = Texture
-        -- :ColorTexture(0.3, 0.3, 0.3)
-        :Texture 'Interface/BUTTONS/UI-Listbox-Highlight2'
-        :BlendMode 'ADD'
-        :VertexColor(1,1,1,0.2)
-        :Hide()
-        :AllPoints(PARENT),
-}
-
-
-local ExpandDownMenu = ScrollFrame { BubbleHover }
-    .TOPLEFT:BOTTOMLEFT()
-    .TOPRIGHT:BOTTOMRIGHT()
-    :Height(1)
-{
-    buttons = {},
-
-    function(self, parent)
-        self:SetScrollChild(self.Container)
-    end,
-
-    MenuAddButton = function(self, button)
-        button:SetParent(self.Container)
-        table.insert(self.buttons, button)
-    end,
-
-    MenuOpen = function(self)
-        self.ClickTracker:SetFocus()
-        SidebarEnter('dropdown')
-        local previous = nil
-        local width = 1
-        local height = 0
-        for _, btn in pairs(self.buttons) do
-            btn:SetPoint('RIGHT', self, 'RIGHT')
-            if previous then
-                btn:SetPoint('TOPLEFT', previous, 'BOTTOMLEFT')
-            else
-                btn:SetPoint('TOPLEFT', self, 'TOPLEFT', 0, -1)
-            end
-            height = height + btn:GetHeight()
-            previous = btn
-        end
-        -- self:SetSize(width+24, height+12)
-        self.targetHeight = height + 1
-        self.animTarget = 1
-    end,
-
-    MenuClose = function(self)
-        SidebarLeave('dropdown')
-        self.animTarget = 0
-    end,
-
-    MenuToggle = function(self)
-        if self.animTarget == 1 then
-            self:MenuClose()
-        else
-            self:MenuOpen()
-        end
-    end,
-
-    [Script.OnHide] = function(self)
-        self.anim = 0
-        self:SetHeight(1)
-    end,
-
-    Container = Frame { BubbleHover }
-        :AllPoints(PARENT),
-
-    ClickTracker = EditBox
-        :AutoFocus(false)
-        :Alpha(0)
-        .BOTTOM:TOP(UIParent)
-        :PropagateKeyboardInput(true)
-    {
-        [Script.OnEditFocusLost] = function(self)
-            self:GetParent():MenuClose()
-        end,
-        [Script.OnEditFocusGained] = function(self)
-            self:GetParent():MenuOpen()
-        end
-    },
-
-    background = Texture
-        .TOPLEFT:TOPLEFT(0, -1)
-        .BOTTOMRIGHT:BOTTOMRIGHT()
-        :ColorTexture(0, 0, 0, 0.5),
-
-    anim = 0,
-    animTarget = 0,
-    [Script.OnUpdate] = function(self, dt)
-        if self.anim ~= self.animTarget then
-            local sign = self.anim >= self.animTarget and -1 or 1
-            local new = math.max(sign > 0 and 0 or self.animTarget,
-                                 math.min(sign > 0 and self.animTarget or 1,
-                                          self.anim + sign * dt*5))
-            self.anim = new
-            self:SetHeight(1 + self.targetHeight * CubicInOut(self.anim))
-        end
-    end,
-
-}
-
-
-
-local StyledButton = Button {
-    Style:SetSize(20, 20),
-
-    [Script.OnEnter] = function(self)
-        self.hoverBg:Show()
-    end,
-
-    [Script.OnLeave] = function(self)
-        self.hoverBg:Hide()
-    end,
-
-    SetText = function(self, ...)
-        self.Text:SetText(...)
-    end,
-
-    SetFont = function(self, font, size, flags)
-        self.Text:SetFont(font, size, flags)
-        if self.textSized then
-            self:ToTextSize()
-        end
-    end,
-
-    ToTextSize = function(self)
-        self.Text:ClearAllPoints()
-        self.Text:SetPoint('LEFT', self, 'LEFT')
-        self.Text:SetWidth(0)
-        self:SetSize(self.Text:GetSize())
-        self.textSized = true
-    end,
-
-    Text = FontString
-        :SetFont('Fonts/FRIZQT__.ttf', 12)
-        :AllPoints(PARENT),
-
-    hoverBg = Texture
-        -- :ColorTexture(0.3, 0.3, 0.3)
-        :Texture 'Interface/BUTTONS/UI-Listbox-Highlight2'
-        :BlendMode 'ADD'
-        :VertexColor(1,1,1,0.1)
-        :Hide()
-        :AllPoints(PARENT)
-}
-
-
-
-local ScriptEntry = Frame { SidebarMouseHooks } {
-    Update = function(self)
-        if self.settings.enabled then
-            self.ContextMenu.Toggle:SetText('Disable')
-            self.Disabled:Hide()
-            self.Enabled:Show()
-        else
-            self.ContextMenu.Toggle:SetText('Run automatically')
-            self.Disabled:Show()
-            self.Enabled:Hide()
-        end
-    end,
-    SetData = function(self, name, script, settings)
-        self.Button:SetText(script.name)
-        self.Button.Name:SetText(script.name)
-        self.Button.Name:SetCursorPosition(0)
-        self.name = name
-        self.script = script
-        self.settings = settings or { enabled=false }
-        self:Update()
-    end,
-    Reset = function(self)
-        self.script.code = self.script.code_original
-        self:Update()
-    end,
-    Edit = function(self)
-        DTT:EditScript(self.name, self.script)
-    end,
-    SetName = function(self, name)
-        self.script.name = name
-    end,
-    Rename = function(self)
-        self.Button.Name:Edit()
-    end,
-
-    [SidebarAnim] = function(self, state)
-        self.Button.Name:SetAlpha(state)
-        self.ContextMenu:SetAlpha(state)
-        self.ActiveBg:SetAlpha(state*0.2)
-    end,
-
-    [OnPage] = function(self, page, script)
-        local show = page == 'script' and self.script == script
-        self.Selected:SetShown(show)
-        self.ActiveBg:SetShown(show)
-    end,
-
-    Button = StyledButton { BubbleHover }
-        :AllPoints()
-        :RegisterForClicks('AnyUp')
-    {
-        ['.Text'] = Style:Alpha(0),
-
-        Name = RenameBox { BubbleHover }
-            .TOPLEFT:TOPLEFT(10, 0)
-            .BOTTOMRIGHT:BOTTOMRIGHT()
-            :EnableMouse(false)
-        {
-            [SELF.Edit] = function(self)
-                SidebarEnter('keyboard')
-            end,
-            [SELF.Save] = function(self)
-                self:GetParent():GetParent():SetName(self:GetText())
-                self:GetParent():GetParent():Edit()
-                SidebarLeave('keyboard')
-            end,
-            [SELF.Cancel] = function(self)
-                SidebarLeave('keyboard')
-            end,
-        },
-
-        [Script.OnClick] = function(self, button)
-            if button == 'LeftButton' then
-                -- editorWindow.CodeEditor.Content.Editor:SetText(self.script.code)
-                -- editorWindow.CodeEditor.Content.Editor:SetCursorPosition(0)
-                self:GetParent():Edit()
-            elseif button == 'RightButton' then
-                self:GetParent().ContextMenu:MenuToggle()
-            end
-        end,
-    },
-
-    ActiveBg = Texture
-        -- :ColorTexture(0.3, 0.3, 0.3)
-        :Texture 'Interface/BUTTONS/UI-Listbox-Highlight2'
-        :BlendMode 'ADD'
-        :VertexColor(1,1,1,0.2)
-        :Hide()
-        :AllPoints(PARENT),
-
-    Enabled = Texture
-        .LEFT:LEFT(3.5, 0)
-        :Size(14, 14)
-        :Texture 'Interface/AddOns/DTT/art/icons/dot'
-        :VertexColor(1, 1, 1, 0.5)
-        :Hide(),
-
-    Disabled = Texture
-        .LEFT:LEFT(3.5, 0)
-        :Size(14, 14)
-        :Texture 'Interface/AddOns/DTT/art/icons/dot-split'
-        :VertexColor(1, 1, 1, 0.5)
-        :Hide(),
-
-    Selected = Texture
-        .LEFT:LEFT(3.5, 0)
-        :Size(14, 14)
-        :Texture 'Interface/AddOns/DTT/art/icons/circle'
-        :Hide(),
-
-    ContextMenu = ExpandDownMenu {
-        Run = ExpandDownButton
-            :Text 'Run'
-            :Click(function(parent)
-                Scripts.ExecuteScript(parent.script)
-            end),
-        Rename = ExpandDownButton
-            :Text 'Rename'
-            :Click(function(parent)
-                parent.Button.Name:Edit()
-            end),
-        Copy = ExpandDownButton
-            :Text 'Copy'
-            :Click(function(parent)
-                local name, script = Scripts.CopyScript(parent.script)
-                parent:GetParent():Update()
-                DTT:EditScript(name, script)
-            end),
-        Toggle = ExpandDownButton
-            :Text 'Disable'
-            :Click(function(parent)
-                parent.settings.enabled = not parent.settings.enabled
-                parent:Update()
-            end),
-        Delete = ExpandDownButton
-            :Text 'Delete'
-            :Click(function(parent)
-                Scripts.DeleteScript(parent.script)
-                parent:GetParent():Update()
-            end),
-    }
-}
-
-
-local FrameAddonSection = Frame
-    :Height(28)
-{
-    scriptButtons = {},
-    Update = function(self)
-        for _, button in pairs(self.scriptButtons) do
-            button:Hide()
-            button:SetPoint('TOP', self, 'TOP')
-        end
-        local height = 28
-        local previous
-        for i, script in pairs(DTTSavedVariablesAccount.scripts) do
-            if not self.scriptButtons[i] then
-                self.scriptButtons[i] = ScriptEntry
-                    :Height(18)
-                    .RIGHT:RIGHT()
-                    .new(self)
-            end
-            local button = self.scriptButtons[i]
-            if previous then
-                button:SetPoint('TOPLEFT', previous.ContextMenu, 'BOTTOMLEFT', 0, -1)
-            else
-                button:SetPoint('TOPLEFT', self, 'TOPLEFT')
-            end
-            button:SetData(script.name, script, DTTSavedVariablesCharacter.scripts[script.name])
-            button:Show()
-            height = height + button:GetHeight()
-            previous = button
-        end
-        self:SetHeight(height)
-    end,
-    NewScript = function(self)
-        local script = Scripts.NewScript()
-        self:Update()
-        for _, button in pairs(self.scriptButtons) do
-            if button.script.name == script then
-                button:Rename()
-                break
-            end
-        end
-    end,
-    Toggle = function(self)
-        self.settings.enabled = not self.settings.enabled
-    end,
-
-    [Script.OnShow] = function(self)
-        self:Update()
-    end,
-
-}
-
-
-local SidebarButton = StyledButton { SidebarMouseHooks } {
-
-    Selected = Texture
-        .LEFT:LEFT(3.5, 0)
-        :Size(14, 14)
-        :Texture 'Interface/AddOns/DTT/art/icons/circle'
-        :Hide(),
-
-    [SidebarAnim] = function(self, state)
-        self.Text:SetAlpha(state)
-    end,
-
-    ['.Text'] = Style
-        :JustifyH 'LEFT'
-        :ClearAllPoints()
-        :Font('Fonts/ARIALN.TTF', 12, '')
-        .TOPLEFT:TOPLEFT(21, 0)
-        .BOTTOMLEFT:BOTTOMLEFT(21, 0),
-}
-
-
-local Sidebar = FrameSmoothScroll
-    :EnableMouse(true)
-{
-    anim = 1,
-    animTarget = 0,
-    entered = {},
-
-    Expand = function(self)
-        self.animTarget = 1
-    end,
-
-    Contract = function(self)
-        self.animTarget = 0
-    end,
-
-    [SidebarEnter] = function(self, obj)
-        self.entered[obj] = true
-        self:Expand()
-    end,
-
-    [SidebarLeave] = function(self, obj)
-        self.entered[obj] = nil
-        if not next(self.entered) then
-            self:Contract()
-        end
-    end,
-
-    [Script.OnUpdate] = function(self, dt)
-        if self.anim ~= self.animTarget then
-            local sign = self.anim >= self.animTarget and -1 or 1
-            local new = math.max(sign > 0 and 0 or self.animTarget,
-                                 math.min(sign > 0 and self.animTarget or 1,
-                                          self.anim + sign * dt*5))
-            self.anim = new
-            self:SetWidth(20 + 130 * CubicInOut(self.anim))
-            SidebarAnim(self.anim)
-        end
-    end,
-
-    ['.Content'] = Style { SidebarMouseHooks } {
-
-        EnterTrace = StyledButton { BubbleHover }
-            .TOPLEFT:TOPLEFT(0, -6)
-            .TOPRIGHT:TOPRIGHT(0, -6)
-            :Height(20)
-            :Text 'Tracers'
-        {
-            [Script.OnClick] = function(self)
-                DTT:EnterTrace()
-            end,
-
-            [SidebarAnim] = function(self, state)
-                self.Text:SetAlpha(state)
-                self.ActiveBg:SetAlpha(state*0.2)
-            end,
-
-            [OnPage] = function(self, page)
-                self.Selected:SetShown(page == 'tracer')
-                self.ActiveBg:SetShown(page == 'tracer')
-            end,
-
-            ActiveBg = Texture
-                :Texture 'Interface/BUTTONS/UI-Listbox-Highlight2'
-                :BlendMode 'ADD'
-                :VertexColor(1,1,1,0.2)
-                :Hide()
-                :AllPoints(PARENT),
-
-            Crosshair = Texture
-                .LEFT:LEFT(3.5, 0)
-                :Size(14, 14)
-                :Texture 'Interface/AddOns/DTT/art/icons/crosshair'
-                :Alpha(0.5),
-
-            HitMarker = Texture
-                .LEFT:LEFT(3.5, 0)
-                :Size(14, 14)
-                :Texture 'Interface/AddOns/DTT/art/icons/hitmarker'
-                :VertexColor(1, 1, 0)
-                :Alpha(0)
-            {
-                [TraceReceived] = function(self)
-                    self:SetAlpha(1)
-                end
-            },
-            [Script.OnUpdate] = function(self, dt)
-                local current = self.HitMarker:GetAlpha()
-                if current > 0 then
-                    self.HitMarker:SetAlpha(math.max(current - dt*2, 0))
-                end
-            end,
-
-            Selected = Texture
-                .LEFT:LEFT(3.5, 0)
-                :Size(14, 14)
-                :Texture 'Interface/AddOns/DTT/art/icons/circle'
-                :Hide(),
-
-            ['.Text'] = Style
-                :JustifyH 'LEFT'
-                :ClearAllPoints()
-                :Font('Fonts/ARIALN.TTF', 12, '')
-                .TOPLEFT:TOPLEFT(21, 0)
-                .BOTTOMLEFT:BOTTOMLEFT(21, 0),
-        },
-
-        ScriptLabel = FontString
-            .TOPLEFT:BOTTOMLEFT(PARENT.EnterTrace, 10, 0)
-            -- .RIGHT:RIGHT()
-            :Height(25)
-            :JustifyH 'LEFT'
-            :Font('Fonts/FRIZQT__.ttf', 12)
-            :Text 'Scripts'
-            :TextColor(0.6, 0.6, 0.6),
-        ScriptAdd = Button { SidebarMouseHooks }
-            .LEFT:RIGHT(PARENT.ScriptLabel, 2, 0)
-            :Size(14, 14)
-            :NormalTexture 'Interface/AddOns/DTT/art/icons/plus'
-        {
-            [Script.OnClick] = function(self)
-                DTT:NewScript()
-            end,
-        },
-        [SidebarAnim] = function(self, state)
-            self.ScriptLabel:SetAlpha(state)
-            self.ScriptAdd:SetAlpha(state)
-        end,
-
-        Scratchpad = SidebarButton
-            .TOPLEFT:BOTTOMLEFT(PARENT.ScriptLabel, -10, 0)
-            .RIGHT:RIGHT()
-            :Text 'Scratchpad'
-        {
-            Smile = Texture
-                .LEFT:LEFT(3.5, 0)
-                :Size(14, 14)
-                :Texture 'Interface/AddOns/DTT/art/icons/smile'
-                :VertexColor(1, 1, 1, 0.5),
-            ActiveBg = Texture
-                :Texture 'Interface/BUTTONS/UI-Listbox-Highlight2'
-                :BlendMode 'ADD'
-                :VertexColor(1,1,1,0.2)
-                :Hide()
-                :AllPoints(PARENT),
-            [Script.OnClick] = function(self)
-                DTT:EditScratchpad()
-            end,
-            [OnPage] = function(self, page)
-                self.Selected:SetShown(page == 'scratchpad')
-                self.ActiveBg:SetShown(page == 'scratchpad')
-            end,
-            [SidebarAnim] = function(self, state)
-                self.ActiveBg:SetAlpha(0.2*state)
-            end
-        },
-
-        Scripts = Frame
-            .TOPLEFT:BOTTOMLEFT(PARENT.Scratchpad)
-            .RIGHT:RIGHT()
-        {
-            function(self, parent)
-                Style(self){
-                    DTT = FrameAddonSection
-                        .TOPLEFT:TOPLEFT()
-                        .RIGHT:RIGHT()
-                        :Update()
-                }
-                self:SetHeight(self.DTT:GetHeight())
-            end,
-
-            Update = function(self)
-                for script in query(self, '.*') do
-                    script:Update()
-                end
-            end
-        },
-    },
-
-}
-
-
-local PageMain = FrameSmoothScroll {
+local PageCodeEditor = FrameSmoothScroll {
 
     bg = Texture
         :AllPoints()
@@ -838,17 +203,17 @@ local FrameDTT = Frame { PixelAnchor, PixelSizex2 }
     :Toplevel(true)
 {
     function(self)
-        self.editor = self.PageMain.Content.CodeEditor.Editor
+        self.editor = self.PageCodeEditor.Content.CodeEditor.Editor
         self.scripts = self.SideBar.Content.Scripts
     end,
     buttons = {},
     scriptEditing = nil,
     ShowMain = function(self)
         self:HideAll()
-        self.PageMain:Show()
+        self.PageCodeEditor:Show()
         self.FrameInspector:Show()
     end,
-    EditScript = function(self, name, script)
+    EditScript = function(self, script)
         self:ShowMain()
         self.scriptEditing = script
         -- self.CodeEditor:Show()
@@ -862,7 +227,7 @@ local FrameDTT = Frame { PixelAnchor, PixelSizex2 }
         self.editor:SetText(script.code)
         self.editor:SetCursorPosition(0)
         self.editor:SetFocus()
-        self.PageMain:SetVerticalScroll(0)
+        self.PageCodeEditor:SetVerticalScroll(0)
         OnPage('script', script)
     end,
     RenameScript = function(self, name)
@@ -880,7 +245,7 @@ local FrameDTT = Frame { PixelAnchor, PixelSizex2 }
         self.editor:SetText(DTTSavedVariablesAccount.playground or '\n\n')
         self.editor:SetCursorPosition(0)
         self.editor:SetFocus()
-        self.PageMain:SetVerticalScroll(0)
+        self.PageCodeEditor:SetVerticalScroll(0)
         OnPage('scratchpad')
     end,
     EditRawValue = function(self, value, name)
@@ -892,7 +257,7 @@ local FrameDTT = Frame { PixelAnchor, PixelSizex2 }
         self.editor:SetText(value)
         self.editor:SetCursorPosition(0)
         self.editor:SetFocus()
-        self.PageMain:SetVerticalScroll(0)
+        self.PageCodeEditor:SetVerticalScroll(0)
         OnPage('raw', name)
     end,
     EnterTrace = function(self)
@@ -903,7 +268,7 @@ local FrameDTT = Frame { PixelAnchor, PixelSizex2 }
     HideAll = function(self)
         self.scriptEditing = nil
         self.Tracer:Hide()
-        self.PageMain:Hide()
+        self.PageCodeEditor:Hide()
         self.PageSettings:Hide()
     end,
     EnterSettings = function(self)
@@ -917,7 +282,7 @@ local FrameDTT = Frame { PixelAnchor, PixelSizex2 }
             self:EditScratchpad()
         elseif self.scriptEditing == 'scratchpad' then
             if #scriptButtons > 0 then
-                self:EditScript('Silver UI', scriptButtons[1].script)
+                self:EditScript(scriptButtons[1].script)
             end
         else
             local nextScript
@@ -929,7 +294,7 @@ local FrameDTT = Frame { PixelAnchor, PixelSizex2 }
                 end
             end
             if nextScript and nextScript <= #scriptButtons and scriptButtons[nextScript]:IsShown() then
-                self:EditScript('', scriptButtons[nextScript].script)
+                self:EditScript(scriptButtons[nextScript].script)
             end
         end
     end,
@@ -949,7 +314,7 @@ local FrameDTT = Frame { PixelAnchor, PixelSizex2 }
                 if previousScript == 0 then
                     self:EditScratchpad()
                 else
-                    self:EditScript('', self.scripts['DTT'].scriptButtons[previousScript].script)
+                    self:EditScript(self.scripts['DTT'].scriptButtons[previousScript].script)
                 end
             end
         end
@@ -1089,12 +454,12 @@ local FrameDTT = Frame { PixelAnchor, PixelSizex2 }
         end
     },
 
-    SideBar = Sidebar
+    SideBar = Addon.DTTSidebar
         .TOPLEFT:TOPLEFT(0, -25)
         .BOTTOMLEFT:BOTTOMLEFT()
         :Width(20),
 
-    PageMain = PageMain
+    PageCodeEditor = PageCodeEditor
         -- .TOPLEFT:TOPLEFT(0, -25)
         .TOPLEFT:TOPRIGHT(PARENT.SideBar)
         .BOTTOMRIGHT:BOTTOMRIGHT(-330, 0),
@@ -1110,7 +475,7 @@ local FrameDTT = Frame { PixelAnchor, PixelSizex2 }
         :Hide(),
 
     FrameInspector = FrameInspector
-        .TOPLEFT:TOPRIGHT(PARENT.PageMain)
+        .TOPLEFT:TOPRIGHT(PARENT.PageCodeEditor)
         .BOTTOMRIGHT:BOTTOMRIGHT(-10, 0)
     {
         [Hook.ClickEntry] = function(self, table, key)

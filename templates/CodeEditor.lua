@@ -140,13 +140,15 @@ Addon.CodeEditor = Frame {
             end
         end,
         [Script.OnKeyDown] = function(self, key)
-            if
-                key == 'ESCAPE'
-                or IsControlKeyDown() and key == 'TAB'
-            then
-                self:SetPropagateKeyboardInput(true)
-            else
-                self:SetPropagateKeyboardInput(false)
+            if not InCombatLockdown() then
+                if
+                    key == 'ESCAPE'
+                    or IsControlKeyDown() and key == 'TAB'
+                then
+                    self:SetPropagateKeyboardInput(true)
+                else
+                    self:SetPropagateKeyboardInput(false)
+                end
             end
             if IsControlKeyDown() then
                 if key == 'R' then
